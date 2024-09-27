@@ -17,12 +17,13 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
     fmt.Println("Downloading with flags:", flags)
    
 }
-func ParseFlags() (map[string]string, bool) {
+func ParseFlags() (map[string]string, bool,bool) {
     // Define all possible flags
     outputFileName := flag.String("O", "", "Specify the output file name (optional)")
     downloadPath := flag.String("P", "", "Specify the path to save the file")
     rateLimit := flag.String("rate-limit", "", "Specify the maximum download rate (e.g., '500k', '2M')")
     help := flag.Bool("help", false, "Display help information")
+	web := flag.Bool("web", false, "Start the web server interface")
 
     // Parse the command line arguments
     flag.Parse()
@@ -51,5 +52,5 @@ func ParseFlags() (map[string]string, bool) {
         anyFlagUsed = true
     }
 
-    return flagsUsed, anyFlagUsed
+    return flagsUsed, anyFlagUsed, *web
 }
