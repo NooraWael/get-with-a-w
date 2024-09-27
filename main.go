@@ -16,10 +16,8 @@ func main() {
 	if flagProvided {
 		config.HandleDownloadWithFlags(url, flags)
 	} else {
-		fmt.Println("No flags provided.")
-
 		//get a name for the download and call the download function
-		output,err := utils.MakeAName(url) 
+		output, err := utils.MakeAName(url)
 		if err != nil {
 			fmt.Println("Error making a name for the download:", err)
 			return
