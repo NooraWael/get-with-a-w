@@ -23,6 +23,9 @@ func StartWebServer() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
+	router.GET("/documentation", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "documentation.html", nil)
+	})
 
 	router.POST("/download", func(c *gin.Context) {
 		url := c.PostForm("url")

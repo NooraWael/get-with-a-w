@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation</title>
+    <link rel="stylesheet" href="/static/css/documentation.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/documentation" class="active">Documentation</a></li>
+        </ul>
+    </nav>
+    
+    <div class="doc-container">
+        <aside class="sidebar">
+            <h3>Sections</h3>
+            <ul>
+                <li><a href="#section1">Introduction</a></li>
+                <li><a href="#section2">Installation</a></li>
+                <li><a href="#section3">Usage</a></li>
+                <li><a href="#section4">Functions</a></li>
+                <li><a href="#section5">FAQ</a></li>
+            </ul>
+        </aside>
+
+        <main class="documentation">
+            <section id="section1" class="doc-section">
+                <h2>Introduction</h2>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus vitae velit at sem bibendum aliquam.</p>
+            </section>
+
+            <section id="section2" class="doc-section collapsible">
+                <h2>Installation</h2>
+                <p>Instructions to install the service go here...</p>
+                <div class="content">
+                    <p>Detailed installation steps with code examples:</p>
+                    <pre><code>$ npm install example-service</code></pre>
+                </div>
+            </section>
+
+            <section id="section3" class="doc-section collapsible">
+                <h2>Usage</h2>
+                <p>Learn how to use the service effectively.</p>
+                <div class="content">
+                    <h3>Basic Example:</h3>
+                    <pre><code>// Basic usage
+function startDownload(url) {
+    downloadService.download(url);
+}</code></pre>
+                </div>
+            </section>
+
+            <section id="section4" class="doc-section collapsible">
+                <h2>API</h2>
+                <p>API reference details all endpoints and parameters.</p>
+                <div class="content">
+                    <h3>GET /download</h3>
+                    <p>Fetch a downloadable file using this endpoint.</p>
+                    <pre><code>GET /download?url={file_url}</code></pre>
+                </div>
+            </section>
+
+            <section id="section5" class="doc-section collapsible">
+                <h2>FAQ</h2>
+                <p>Common questions and answers go here.</p>
+                <div class="content">
+                    <h3>Q: What is the file size limit?</h3>
+                    <p>A: The file size limit is 500MB.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/documentation.js"></script>
+</body>
+</html>
