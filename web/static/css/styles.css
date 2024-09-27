@@ -1,0 +1,117 @@
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #EFCFA0; /* Sand Dollar */
+    color: #532200; /* Puce */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* Navigation */
+nav {
+    background-color: #532200;
+    width: 100%;
+    padding: 1rem 0;
+}
+
+nav ul {
+    list-style-type: none;
+    display: flex;
+    justify-content: center;
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    color: #EFCFA0; /* Sand Dollar */
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 15px;
+}
+
+nav ul li a.active,
+nav ul li a:hover {
+    background-color: #E1A140; /* Gold */
+    color: #532200;
+    border-radius: 5px;
+}
+
+/* Main Container */
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin-top: 50px;
+    padding: 20px;
+}
+
+/* Content (Text + Form) */
+.content {
+    flex: 1;
+    max-width: 500px;
+}
+
+.content h1 {
+    font-size: 2.5rem;
+    color: #532200; /* Puce */
+}
+
+.content p {
+    font-size: 1.2rem;
+    margin: 10px 0 20px 0;
+    color: #532200;
+}
+
+/* Form Styling */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 2px solid #E1A140; /* Gold */
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+button {
+    padding: 10px;
+    background-color: #E1A140; /* Gold */
+    border: none;
+    color: #532200; /* Puce */
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #e68a00; /* Burnt Orange */
+    color: #fff;
+}
+
+/* Hero Image */
+.image {
+    flex: 1;
+    margin-left: 40px;
+}
+
+.image img {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
