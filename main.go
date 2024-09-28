@@ -12,7 +12,6 @@ import (
 func main() {
 	//get the flags entered in
 	flags, flagProvided, startweb := config.ParseFlags()
-
 	if startweb {
 		web.StartWebServer()
 	} else {

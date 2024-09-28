@@ -2,9 +2,9 @@ package config
 
 import (
 	"flag"
-	"fmt"
-	"wget/utils"
 	"os"
+	"wget/logger"
+	"wget/utils"
 )
 
 //configuration settings and command line flags
@@ -13,44 +13,54 @@ import (
 //bery bery complicated but fun
 
 func HandleDownloadWithFlags(url string, flags map[string]string) {
-    // Here you would handle different flags and call the appropriate downloading logic
-    fmt.Println("Downloading with flags:", flags)
-   
+	// Here you would handle different flags and call the appropriate downloading logic
+	for key, value := range flags {
+		switch key {
+		case "B":
+			logger.DownloadAndLog(url, value)
+		}
+	}
 }
-func ParseFlags() (map[string]string, bool,bool) {
-    // Define all possible flags
-    outputFileName := flag.String("O", "", "Specify the output file name (optional)")
-    downloadPath := flag.String("P", "", "Specify the path to save the file")
-    rateLimit := flag.String("rate-limit", "", "Specify the maximum download rate (e.g., '500k', '2M')")
-    help := flag.Bool("help", false, "Display help information")
+
+func ParseFlags() (map[string]string, bool, bool) {
+	// Define all possible flags
+	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
+	downloadPath := flag.String("P", "", "Specify the path to save the file")
+	downladAndLog := flag.String("B", "", "Specifiy the filename to write the log into")
+	rateLimit := flag.String("rate-limit", "", "Specify the maximum download rate (e.g., '500k', '2M')")
+	help := flag.Bool("help", false, "Display help information")
 	web := flag.Bool("web", false, "Start the web server interface")
 
-    // Parse the command line arguments
-    flag.Parse()
+	// Parse the command line arguments
+	flag.Parse()
 
-    // Check if help was requested
-    if *help {
-        utils.DisplayHelp()
-        os.Exit(0)
-    }
+	// Check if help was requested
+	if *help {
+		utils.DisplayHelp()
+		os.Exit(0)
+	}
 
-    // Map to store flags that were actually set
-    flagsUsed := make(map[string]string)
-    anyFlagUsed := false
+	// Map to store flags that were actually set
+	flagsUsed := make(map[string]string)
+	anyFlagUsed := false
 
-    // Check each flag and add to the map if it was set
-    if *outputFileName != "" {
-        flagsUsed["O"] = *outputFileName
-        anyFlagUsed = true
-    }
-    if *downloadPath != "" {
-        flagsUsed["P"] = *downloadPath
-        anyFlagUsed = true
-    }
-    if *rateLimit != "" {
-        flagsUsed["rate-limit"] = *rateLimit
-        anyFlagUsed = true
-    }
+	// Check each flag and add to the map if it was set
+	if *outputFileName != "" {
+		flagsUsed["O"] = *outputFileName
+		anyFlagUsed = true
+	}
+	if *downloadPath != "" {
+		flagsUsed["P"] = *downloadPath
+		anyFlagUsed = true
+	}
+	if *rateLimit != "" {
+		flagsUsed["rate-limit"] = *rateLimit
+		anyFlagUsed = true
+	}
+	if *downladAndLog != "" {
+		flagsUsed["B"] = *downladAndLog
+		anyFlagUsed = true
+	}
 
-    return flagsUsed, anyFlagUsed, *web
+	return flagsUsed, anyFlagUsed, *web
 }
