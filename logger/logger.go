@@ -13,8 +13,12 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// handles downlaod progress
-// -B flag here
+// This function will handle the downloading of the specified location passed and will
+// create or replace the file content of the filename that was passed using the flag then
+// write the progress into the log file with the specified name
+//
+// @params url - the URL which contents will be downloaded
+// @params flagVlaue - the filename that was specified with the flag -B
 func DownloadAndLog(url string, flagValue string) {
 	// identify if the argument provided contains the file name or just the link
 	// example:

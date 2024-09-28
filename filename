@@ -1,0 +1,8 @@
+| downloading (8.1 kB, 168 MB/s) [0s] start at 024-09-28 22:20:55
+sending request, awaiting response... status 200 OK
+content size: -1 [~-0.00MB]
+saving file to: default_filename
+| downloading (8.1 kB, 168 MB/s) [0s] 
+
+Downloaded [https://mikegrindle.com/posts/obtf]
+finished at 633.944915ms
