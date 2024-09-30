@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"wget/utils"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -17,7 +18,7 @@ import (
 //
 // @params url - the URL which contents will be downloaded
 // @params flagVlaue - the filename that was specified with the flag -B
-func DownloadAndLog(url string,logFilee string) {
+func DownloadAndLog(url string, logFilee string) {
 	fmt.Println("Output will be written to wget-log.")
 	logFile, err := os.OpenFile("wget-log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -44,12 +45,16 @@ func DownloadAndLog(url string,logFilee string) {
 	sizeMB := float64(size) / (1024 * 1024)
 	logger.Printf("content size: %d [~%.2fMB]", size, sizeMB)
 
-	file, err := os.Create("test") // Always save downloaded file as 'test'
+	makeAName, err := utils.MakeAName(url)
+	if err != nil {
+		logger.Fatalf("Error creating file: %v", err)
+	}
+	file, err := os.Create(makeAName) // Always save downloaded file as 'test'
 	if err != nil {
 		logger.Fatalf("Error creating file: %v", err)
 	}
 	defer file.Close()
-	logger.Printf("saving file to: %s", "test")
+	logger.Printf("saving file to: ./%s", makeAName)
 
 	// Create a progress bar that writes to discard since we don't need to display it
 	bar := progressbar.NewOptions64(size, progressbar.OptionSetWriter(io.Discard))
