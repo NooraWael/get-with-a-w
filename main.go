@@ -11,13 +11,13 @@ import (
 
 func main() {
 	//get the flags entered in
-	flags, flagProvided, startweb := config.ParseFlags()
+	flags, flagProvided, startweb,url2 := config.ParseFlags()
 	if startweb {
 		web.StartWebServer()
 	} else {
 		url := flag.Arg(0)
 		if flagProvided {
-			config.HandleDownloadWithFlags(url, flags)
+			config.HandleDownloadWithFlags(url2, flags)
 		} else {
 			//get a name for the download and call the download function
 			output, err := utils.MakeAName(url)

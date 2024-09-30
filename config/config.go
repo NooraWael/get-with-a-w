@@ -22,7 +22,7 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	}
 }
 
-func ParseFlags() (map[string]string, bool, bool) {
+func ParseFlags() (map[string]string, bool, bool,string) {
 	// Define all possible flags
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
@@ -44,23 +44,30 @@ func ParseFlags() (map[string]string, bool, bool) {
 	flagsUsed := make(map[string]string)
 	anyFlagUsed := false
 
+	url := ""
 	// Check each flag and add to the map if it was set
 	if *outputFileName != "" {
 		flagsUsed["O"] = *outputFileName
+		url = *outputFileName
 		anyFlagUsed = true
 	}
 	if *downloadPath != "" {
 		flagsUsed["P"] = *downloadPath
+		url = *downloadPath
 		anyFlagUsed = true
 	}
 	if *rateLimit != "" {
 		flagsUsed["rate-limit"] = *rateLimit
+		url = *rateLimit
 		anyFlagUsed = true
 	}
 	if *downladAndLog != "" {
 		flagsUsed["B"] = *downladAndLog
+		url = *downladAndLog
 		anyFlagUsed = true
 	}
+	
 
-	return flagsUsed, anyFlagUsed, *web
+
+	return flagsUsed, anyFlagUsed, *web,url
 }
