@@ -24,7 +24,7 @@ import (
 //
 // @parameter url - the URL which the file will be downloaded from
 // @parameter flags - a map of the entire flags and their values that were passed when running the program
-func HandleDownloadWithFlags(url string, flags map[string]string) {
+func HandleDownloadWithFlags(url string, flags map[string]any) {
 	var err error
 
 	// ----------- -B flag -------------
@@ -44,7 +44,7 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 			fmt.Println("Output will be written to wget-log if logToFile is true, else to stdout.")
 		case "O":
 			changeFileName = true
-			fileName = value
+			fileName = value.(string) // type assertion
 			fmt.Println(fileName)
 		}
 	}
@@ -112,7 +112,7 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	logger.Printf("Downloaded [%s]\nfinished at %s", url, finishTime.Format("2006-01-02 15:04:05"))
 }
 
-func ParseFlags() (map[string]string, bool, bool, string) {
+func ParseFlags() (map[string]any, bool, bool, string) {
 	// Define all possible flags
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
@@ -131,7 +131,7 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 	}
 
 	// Map to store flags that were actually set
-	flagsUsed := make(map[string]string)
+	flagsUsed := make(map[string]any) // using generics to store multiple type at the same time
 	anyFlagUsed := false
 
 	// captures the non flag arguements
@@ -153,11 +153,11 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 		anyFlagUsed = true
 	}
 
-	if !*logToFile {
-		flagsUsed["B"] = "true"
+	// by default store the value of the -B flag
+	flagsUsed["B"] = *logToFile
+	if *logToFile {
+		flagsUsed["B"] = true
 		anyFlagUsed = true
-	} else {
-		flagsUsed["B"] = "false"
 	}
 
 	return flagsUsed, anyFlagUsed, *web, url
