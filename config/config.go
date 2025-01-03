@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 	"wget/utils"
 
@@ -34,6 +35,11 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 	changeFileName := false // if the -O flag is passed change the file name that will be created
 	var fileName string     // store the value of the file name
 
+	// ----------- -P flag -------------
+	saveInDifferentLocation := false // if the saving location has been changed using the -P flag
+	var filePath string              // the file path that the file will be stored in using the value in the flag
+	var joinedPath string            // the entire path that will include the location and the filename
+
 	var logger *log.Logger
 	var logWriter io.Writer // variable that will handle where the log will be printed to
 
@@ -46,6 +52,9 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 			changeFileName = true
 			fileName = value.(string) // type assertion
 			fmt.Println(fileName)
+		case "P":
+			saveInDifferentLocation = true
+			filePath = value.(string)
 		}
 	}
 
@@ -89,6 +98,17 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 		if err != nil {
 			logger.Fatalf("Error creating file: %v", err)
 		}
+	}
+
+	if saveInDifferentLocation {
+		// get the absoulute path
+		absFilePath, err := filepath.Abs(filePath)
+		if err != nil {
+			logger.Fatalf("Error getting path: %v", err)
+		}
+
+		// join the path of the folder to save the file into with the file name
+		joinedPath = filepath.Join(absFilePath, fileName)
 	}
 
 	file, err := os.Create(fileName) // Always save downloaded file as 'test'
