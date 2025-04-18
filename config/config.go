@@ -25,7 +25,7 @@ import (
 //
 // @parameter url - the URL which the file will be downloaded from
 // @parameter flags - a map of the entire flags and their values that were passed when running the program
-func HandleDownloadWithFlags(url string, flags map[string]any) {
+func HandleDownloadWithFlags(url string, flags map[string]string) {
 	var err error
 
 	// ----------- -B flag -------------
@@ -50,11 +50,11 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 			fmt.Println("Output will be written to wget-log if logToFile is true, else to stdout.")
 		case "O":
 			changeFileName = true
-			fileName = value.(string) // type assertion
+			fileName = value
 			fmt.Println(fileName)
 		case "P":
 			saveInDifferentLocation = true
-			filePath = value.(string)
+			filePath = value
 		case "rate-limit":	
 		}
 	}
@@ -133,7 +133,7 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 	logger.Printf("Downloaded [%s]\nfinished at %s", url, finishTime.Format("2006-01-02 15:04:05"))
 }
 
-func ParseFlags() (map[string]any, bool, bool, string) {
+func ParseFlags() (map[string]string, bool, bool, string) {
 	// Define all possible flags
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
@@ -159,7 +159,7 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	}
 
 	// Map to store flags that were actually set
-	flagsUsed := make(map[string]any) // using generics to store multiple type at the same time
+	flagsUsed := make(map[string]string) // using generics to store multiple type at the same time
 	anyFlagUsed := false
 
 	// captures the non flag arguements
@@ -172,7 +172,7 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	}
 
 	if *mirror {
-		flagsUsed["mirror"] = *mirror
+		flagsUsed["mirror"] = "mirror"
 		anyFlagUsed = true
 	}
 
@@ -195,11 +195,12 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	}
 
 	if *convertLinks != false {
-		flagsUsed["convert-links"] = *convertLinks
+		flagsUsed["convert-links"] = "convertLinks"
 		anyFlagUsed = true
 	}
 
 	if *inputFile != "" {
+		print(*inputFile)
 		flagsUsed["i"] = *inputFile
 		anyFlagUsed = true
 	}
@@ -215,9 +216,9 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	}
 
 	// by default store the value of the -B flag
-	flagsUsed["B"] = *logToFile
+	flagsUsed["B"] = "wget-log"
 	if *logToFile {
-		flagsUsed["B"] = true
+		flagsUsed["B"] = "wget-log"
 		anyFlagUsed = true
 	}
 

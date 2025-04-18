@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/schollz/progressbar/v3"
+	"wget/utils"
 )
 
 var(
@@ -54,6 +55,11 @@ func DownloadFile(url string) (*os.File, error) {
 	sizeMB := float64(size) / (1024 * 1024)
 	fmt.Printf("content size: %d [~%.2fMB]\n", size, sizeMB)
 
+	fileName, err := utils.MakeAName(url)
+	if err != nil {
+		fmt.Println("Error making a name for the download:", err)
+		return nil, err
+	}
 	// Create the file
 	file, err := os.Create(fileName)
 	if err != nil {

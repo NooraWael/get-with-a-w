@@ -6,19 +6,14 @@ import (
 	"sync"
 	"bufio"
 	"strings"
-	"wget/logger"
+	// "wget/logger"
 )
 // Manages multiple and background downloads
 // i flag mostly
 // Handles the case when -i flag is set
-func fileList(inputFile, outputFile string) {
-	if outputFile != "" {
-		fmt.Println("Cannot specify both -O and -i")
-		os.Exit(1)
-	}
-
+func FileList(inputFile string) {
 	SetMultiFileMode(true)
-
+	// convert interface to string
 	file, err := os.Open(inputFile)
 	if err != nil {
 		fmt.Printf("Failed to open file: %v\n", err)
@@ -33,11 +28,13 @@ func fileList(inputFile, outputFile string) {
 	reader := bufio.NewReader(file)
 
 	for {
+
 		line, _, err := reader.ReadLine()
 		if err != nil {
 			if err.Error() != "EOF" {
 				msg := fmt.Sprintf("Failed to read file: %v", err)
-				logger.Log(msg)
+				print(msg)
+				// logger.Log(msg)
 			}
 			break
 		}
@@ -45,6 +42,7 @@ func fileList(inputFile, outputFile string) {
 		wg.Add(1)
 		go func(link string) {
 			defer wg.Done()
+			print("Testing link: ", link)
 			DownloadFile(strings.TrimSuffix(link, "\n"))
 		}(string(line))
 	}

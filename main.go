@@ -19,7 +19,16 @@ func main() {
 		web.StartWebServer()
 	} else {
 		url := flag.Arg(0)
+		print(flags["i"], flagProvided)
 		if flagProvided {
+			if flags["i"] != "" {
+				print(flags)
+				inputFile := flags["i"]
+				downloader.SetFileName(inputFile)
+				downloader.SetMultiFileMode(true)
+				downloader.FileList(inputFile)	
+				return			
+			}
 			config.HandleDownloadWithFlags(url2, flags)
 		} else {
 			//get a name for the download and call the download function
