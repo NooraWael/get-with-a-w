@@ -38,7 +38,7 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 	// ----------- -P flag -------------
 	saveInDifferentLocation := false // if the saving location has been changed using the -P flag
 	var filePath string              // the file path that the file will be stored in using the value in the flag
-	var joinedPath string            // the entire path that will include the location and the filename
+	var joinedPath string          // the entire path that will include the location and the filename
 
 	var logger *log.Logger
 	var logWriter io.Writer // variable that will handle where the log will be printed to
@@ -55,6 +55,7 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 		case "P":
 			saveInDifferentLocation = true
 			filePath = value.(string)
+		case "rate-limit":	
 		}
 	}
 
@@ -127,7 +128,7 @@ func HandleDownloadWithFlags(url string, flags map[string]any) {
 	if err != nil {
 		logger.Fatalf("Error writing to file: %v", err)
 	}
-
+	print(joinedPath)
 	finishTime := time.Now()
 	logger.Printf("Downloaded [%s]\nfinished at %s", url, finishTime.Format("2006-01-02 15:04:05"))
 }
@@ -137,10 +138,17 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
 	logToFile := flag.Bool("B", false, "Specifiy the filename to write the log into")
+	inputFile := flag.String("i", "", "Specify the input file containing URLs")
 	rateLimit := flag.String("rate-limit", "", "Specify the maximum download rate (e.g., '500k', '2M')")
+	mirror := flag.Bool("mirror", false, "Mirror the entire website")
 	help := flag.Bool("help", false, "Display help information")
 	web := flag.Bool("web", false, "Start the web server interface")
+	rejectList      := flag.String("R", "", "Comma separated list of file extensions to reject")
+	rejectListAlias := flag.String("reject", "", "Comma separated list of file extensions to reject (alias for -R)")
 
+	excludeDirs      := flag.String("X", "", "Comma separated list of directories to exclude")
+	excludeDirsAlias := flag.String("exclude", "", "Comma separated list of directories to exclude (alias for -X)")
+	convertLinks := flag.Bool("convert-links", false, "Convert links to local")
 	// Parse the command line arguments
 	flag.Parse()
 
@@ -160,6 +168,39 @@ func ParseFlags() (map[string]any, bool, bool, string) {
 	// Check each flag and add to the map if it was set
 	if *outputFileName != "" {
 		flagsUsed["O"] = *outputFileName
+		anyFlagUsed = true
+	}
+
+	if *mirror {
+		flagsUsed["mirror"] = *mirror
+		anyFlagUsed = true
+	}
+
+	if *rejectList != "" {
+		flagsUsed["R"] = *rejectList
+		anyFlagUsed = true
+	}
+	if *rejectListAlias != "" {
+		flagsUsed["reject"] = *rejectListAlias
+		anyFlagUsed = true
+	}
+	if *excludeDirs != "" {
+		flagsUsed["X"] = *excludeDirs
+		anyFlagUsed = true
+	}
+
+	if *excludeDirsAlias != "" {
+		flagsUsed["exclude"] = *excludeDirsAlias
+		anyFlagUsed = true
+	}
+
+	if *convertLinks != false {
+		flagsUsed["convert-links"] = *convertLinks
+		anyFlagUsed = true
+	}
+
+	if *inputFile != "" {
+		flagsUsed["i"] = *inputFile
 		anyFlagUsed = true
 	}
 

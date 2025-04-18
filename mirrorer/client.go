@@ -1,3 +1,3 @@
-package http
+package mirrorer
 
 //manages http requests and responses 

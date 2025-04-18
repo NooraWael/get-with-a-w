@@ -42,7 +42,7 @@ func StartWebServer() {
 		}
 
 		// Call your existing download function
-		err := downloader.DownloadFile(url, outputPath)
+		_, err := downloader.DownloadFile(url)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "Failed to download: %s", err.Error())
 			return
