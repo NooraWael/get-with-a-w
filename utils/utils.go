@@ -16,12 +16,10 @@ func MakeAName(urlStr string) (string,error) {
 	if err != nil {
 		return "default",err
 	}
-
 	//Extract base
 	fileName := path.Base(parsedUrl.Path)
-
-	if fileName == "" || !strings.Contains(fileName, ".") {
-        return "default_filename", nil
+	if fileName == "" || !strings.Contains(fileName, ".") || fileName == "." {
+        return "index.html", nil
     }
 
     return fileName,nil

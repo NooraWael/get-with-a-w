@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"net/url"
+	"os"
+	"strings"
 	"wget/config"
 	"wget/downloader"
+	"wget/mirrorer"
 	"wget/utils"
 	"wget/web"
-	"wget/mirrorer"
 )
 
 func main() {
@@ -19,17 +20,13 @@ func main() {
 		web.StartWebServer()
 	} else {
 		url := flag.Arg(0)
-		print(flags["i"], flagProvided)
 		if flagProvided {
-			if flags["i"] != "" {
-				print(flags)
-				inputFile := flags["i"]
-				downloader.SetFileName(inputFile)
-				downloader.SetMultiFileMode(true)
-				downloader.FileList(inputFile)	
-				return			
+			if flags["mirror"] != "" {
+				mirror(flags)
+				return
+			} else {
+				config.HandleDownloadWithFlags(url2, flags)
 			}
-			config.HandleDownloadWithFlags(url2, flags)
 		} else {
 			//get a name for the download and call the download function
 			output, err := utils.MakeAName(url)
@@ -41,7 +38,7 @@ func main() {
 			downloader.SetOutputPath(output)
 			//make sure there is :// or something like that
 			url = utils.EnsureScheme(url)
-			_, err = downloader.DownloadFile(url)
+			_, err = downloader.DownloadFile(url, false)
 			if err != nil {
 				fmt.Println("Error downloading the file:", err)
 			}
@@ -50,12 +47,7 @@ func main() {
 }
 
 // code when mirror flag is set
-func mirror(flags map[string]any) {
-	if flags["convert-links"] != nil {
-		convertLinks := flags["convert-links"].(*bool)
-		mirrorer.SetConvertLinks(*convertLinks)
-	}
-
+func mirror(flags map[string]string) {
 	if flags["outputFileName"] != "" {
 		fmt.Println("Cannot specify both -O and -mirror")
 		os.Exit(1)
@@ -86,12 +78,12 @@ func mirror(flags map[string]any) {
 
 
 	if flags["R"] != "" {
-		rejectList := flags["R"].([]string)
-		mirrorer.SetExcludeDirsList(rejectList)
+		rejectList := strings.Split(flags["R"], ",")
+		mirrorer.SetExcludeExtsList(rejectList)
 	}
 
 	if flags["X"] != "" {
-		excludeDirs := flags["X"].([]string)
+		excludeDirs := strings.Split(flags["X"], ",")
 		mirrorer.SetExcludeDirsList(excludeDirs)
 	}
 
@@ -103,6 +95,6 @@ func mirror(flags map[string]any) {
 	downloader.SetMirrorMode(true)
 
 	url, _ := url.Parse(flag.Arg(0))
-
+	println("Mirroring URL:", url.String())
 	mirrorer.Mirror(url)
 }

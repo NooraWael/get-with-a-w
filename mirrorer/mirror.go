@@ -20,7 +20,7 @@ var convertLinks = false
 var baseURL *url.URL
 
 func DownloaderWrapper(urlStr string) *os.File {
-	file, err := downloader.DownloadFile(urlStr)
+	file, err := downloader.DownloadFile(urlStr, true)
 	if err != nil {
 		fmt.Printf("Error downloading file: %v\n", err)
 		return nil
@@ -56,7 +56,7 @@ func Mirror(url *url.URL) {
 		return
 	}
 	defer file.Close()
-
+	
 	file.Seek(0, 0)
 	patchLinks(file)
 }
@@ -264,7 +264,6 @@ func patchLinks(file *os.File) {
 
 	wg.Wait()
 
-
 	// save the modified HTML
 	docHtml, err := doc.Html()
 	if err != nil {
@@ -274,5 +273,5 @@ func patchLinks(file *os.File) {
 	file.Seek(0, 0)
 	file.Truncate(0)
 	file.WriteString(docHtml)
-
+	file.Close()
 }

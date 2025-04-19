@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -8,10 +9,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
+	"wget/downloader"
+	// "wget/mirrorer"
 	"wget/utils"
 
 	"github.com/schollz/progressbar/v3"
+	"golang.org/x/time/rate"
 )
 
 //configuration settings and command line flags
@@ -29,34 +35,57 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	var err error
 
 	// ----------- -B flag -------------
-	logToFile := false // check the existance of the -B flag
+	logToFile := false               // check the existance of the -B flag
+	saveInDifferentLocation := false // check the existance of the -P flag
 
 	// ----------- -O flag -------------
 	changeFileName := false // if the -O flag is passed change the file name that will be created
 	var fileName string     // store the value of the file name
 
 	// ----------- -P flag -------------
-	saveInDifferentLocation := false // if the saving location has been changed using the -P flag
-	var filePath string              // the file path that the file will be stored in using the value in the flag
-	var joinedPath string          // the entire path that will include the location and the filename
+	var filePath string   // the file path that the file will be stored in using the value in the flag
+	var joinedPath string // the entire path that will include the location and the filename
 
 	var logger *log.Logger
 	var logWriter io.Writer // variable that will handle where the log will be printed to
+	var rateLimit int = -1
+	var rateLimitErr error
 
 	for key, value := range flags {
 		switch key {
 		case "B":
 			logToFile = true
-			fmt.Println("Output will be written to wget-log if logToFile is true, else to stdout.")
+			fmt.Println("Output will be written to wget-log.")
 		case "O":
 			changeFileName = true
 			fileName = value
-			fmt.Println(fileName)
 		case "P":
 			saveInDifferentLocation = true
-			filePath = value
-		case "rate-limit":	
+			filePath, err = expandPath(value)
+			if err != nil {
+				log.Fatalf("Error expanding path: %v", err)
+				os.Exit(1)
+			}
+		case "i":
+			inputFile := flags["i"]
+			downloader.SetFileName(inputFile)
+			downloader.SetMultiFileMode(true)
+			downloader.FileList(inputFile)
+			return
+		case "rate-limit":
+			rateLimit, rateLimitErr = adjust_rate_limit(value)
+			if rateLimitErr != nil {
+				log.Fatalf("Error adjusting rate limit: %v", rateLimitErr)
+				os.Exit(1)
+			}
+		case "mirror":
+			// mirrorer
 		}
+	}
+	// rateLimit is in bytes per second
+	var limiter *rate.Limiter
+	if rateLimit > 0 {
+		limiter = rate.NewLimiter(rate.Limit(rateLimit), 64*1024) // burst of 64 KB
 	}
 
 	if logToFile {
@@ -102,6 +131,10 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	}
 
 	if saveInDifferentLocation {
+		if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+			fmt.Println("Failed to create directory: %s, error: %v\n", filePath, err)
+			return
+		}
 		// get the absoulute path
 		absFilePath, err := filepath.Abs(filePath)
 		if err != nil {
@@ -110,25 +143,44 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 
 		// join the path of the folder to save the file into with the file name
 		joinedPath = filepath.Join(absFilePath, fileName)
+	} else {
+		// get the absoulute path
+		absFilePath, err := os.Getwd()
+		if err != nil {
+			logger.Fatalf("Error getting path: %v", err)
+		}
+
+		// join the path of the folder to save the file into with the file name
+		joinedPath = filepath.Join(absFilePath, fileName)
 	}
 
-	file, err := os.Create(fileName) // Always save downloaded file as 'test'
+	file, err := os.Create(joinedPath) // Always save downloaded file as 'test'
 	if err != nil {
 		logger.Fatalf("Error creating file: %v", err)
 	}
 	defer file.Close()
-	logger.Printf("saving file to: ./%s", fileName)
+	logger.Printf("saving file to: ./%s", joinedPath)
 
 	// Create a progress bar that writes to discard since we don't need to display it
-	bar := progressbar.NewOptions64(size, progressbar.OptionSetWriter(io.Discard))
+	if !logToFile {
+	bar := progressbar.DefaultBytes(size, "downloading")
+	
 	multiWriter := io.MultiWriter(file, bar)
-
-	// Copy the response body to the file and update the progress bar
-	_, err = io.Copy(multiWriter, resp.Body)
+	reader := resp.Body
+	
+	if limiter != nil {
+		reader = &rateLimitedReader{
+			ReadCloser: resp.Body,
+			limiter:    limiter,
+		}
+	}
+	_, err = io.Copy(multiWriter, reader)
+	println(joinedPath)
+}
+	
 	if err != nil {
 		logger.Fatalf("Error writing to file: %v", err)
 	}
-	print(joinedPath)
 	finishTime := time.Now()
 	logger.Printf("Downloaded [%s]\nfinished at %s", url, finishTime.Format("2006-01-02 15:04:05"))
 }
@@ -137,16 +189,16 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 	// Define all possible flags
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
-	logToFile := flag.Bool("B", false, "Specifiy the filename to write the log into")
+	logToFile := flag.Bool("B", false, "Specify the filename to write the log into")
 	inputFile := flag.String("i", "", "Specify the input file containing URLs")
 	rateLimit := flag.String("rate-limit", "", "Specify the maximum download rate (e.g., '500k', '2M')")
 	mirror := flag.Bool("mirror", false, "Mirror the entire website")
 	help := flag.Bool("help", false, "Display help information")
 	web := flag.Bool("web", false, "Start the web server interface")
-	rejectList      := flag.String("R", "", "Comma separated list of file extensions to reject")
+	rejectList := flag.String("R", "", "Comma separated list of file extensions to reject")
 	rejectListAlias := flag.String("reject", "", "Comma separated list of file extensions to reject (alias for -R)")
 
-	excludeDirs      := flag.String("X", "", "Comma separated list of directories to exclude")
+	excludeDirs := flag.String("X", "", "Comma separated list of directories to exclude")
 	excludeDirsAlias := flag.String("exclude", "", "Comma separated list of directories to exclude (alias for -X)")
 	convertLinks := flag.Bool("convert-links", false, "Convert links to local")
 	// Parse the command line arguments
@@ -215,12 +267,64 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 		anyFlagUsed = true
 	}
 
-	// by default store the value of the -B flag
-	flagsUsed["B"] = "wget-log"
 	if *logToFile {
 		flagsUsed["B"] = "wget-log"
 		anyFlagUsed = true
 	}
 
 	return flagsUsed, anyFlagUsed, *web, url
+}
+
+func adjust_rate_limit(rateLimit string) (int, error) {
+	// Parse the rate limit string and convert it to bytes per second
+	var multiplier int
+	testRateLimit, err := strconv.Atoi(rateLimit[:len(rateLimit)])
+	if err == nil {
+		return testRateLimit, nil
+	}
+	switch rateLimit[len(rateLimit)-1] {
+	case 'k':
+		multiplier = 1000
+	case 'M':
+		multiplier = 1000 * 1000
+	case 'G':
+		multiplier = 1000 * 1000 * 1000
+	default:
+		return 0, fmt.Errorf("invalid rate limit format")
+	}
+
+	rate, err := strconv.Atoi(rateLimit[:len(rateLimit)-1])
+	if err != nil {
+		return 0, err
+	}
+
+	return rate * multiplier, nil
+}
+
+type rateLimitedReader struct {
+	io.ReadCloser
+	limiter *rate.Limiter
+}
+
+func (r *rateLimitedReader) Read(p []byte) (int, error) {
+	n, err := r.ReadCloser.Read(p)
+	if err != nil {
+		return n, err
+	}
+	// Wait for permission to read n bytes
+	if err := r.limiter.WaitN(context.Background(), n); err != nil {
+		return n, err
+	}
+	return n, nil
+}
+
+func expandPath(path string) (string, error) {
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, path[2:]), nil
+	}
+	return path, nil
 }

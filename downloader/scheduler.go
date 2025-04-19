@@ -43,7 +43,7 @@ func FileList(inputFile string) {
 		go func(link string) {
 			defer wg.Done()
 			print("Testing link: ", link)
-			DownloadFile(strings.TrimSuffix(link, "\n"))
+			DownloadFile(strings.TrimSuffix(link, "\n"), false)
 		}(string(line))
 	}
 
