@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 	"wget/downloader"
+
 	// "wget/mirrorer"
 	"wget/utils"
 
@@ -33,7 +34,7 @@ import (
 // @parameter flags - a map of the entire flags and their values that were passed when running the program
 func HandleDownloadWithFlags(url string, flags map[string]string) {
 	var err error
-
+	fmt.Println("fileURL", url)
 	// ----------- -B flag -------------
 	logToFile := false               // check the existance of the -B flag
 	saveInDifferentLocation := false // check the existance of the -P flag
@@ -214,8 +215,8 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 	flagsUsed := make(map[string]string) // using generics to store multiple type at the same time
 	anyFlagUsed := false
 
-	// captures the non flag arguements
-	url := flag.Arg(0)
+	// get arg after the flags
+	urlArg := flag.Arg(0)
 
 	// Check each flag and add to the map if it was set
 	if *outputFileName != "" {
@@ -252,7 +253,6 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 	}
 
 	if *inputFile != "" {
-		print(*inputFile)
 		flagsUsed["i"] = *inputFile
 		anyFlagUsed = true
 	}
@@ -272,7 +272,7 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 		anyFlagUsed = true
 	}
 
-	return flagsUsed, anyFlagUsed, *web, url
+	return flagsUsed, anyFlagUsed, *web, urlArg
 }
 
 func adjust_rate_limit(rateLimit string) (int, error) {

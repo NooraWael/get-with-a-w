@@ -25,12 +25,7 @@ func DownloaderWrapper(urlStr string) *os.File {
 		fmt.Printf("Error downloading file: %v\n", err)
 		return nil
 	}
-	if file == nil {
-		fmt.Printf("Error: file is nil\n")
-		return nil
-	} else {
-		return file
-	}
+	return file
 }
 
 // SetExcludeExtsList sets the list of file extensions to exclude during mirroring.
@@ -52,9 +47,6 @@ func SetConvertLinks(convert bool) {
 func Mirror(url *url.URL) {
 	baseURL = url
 	file := DownloaderWrapper(url.String())
-	if file == nil {
-		return
-	}
 	defer file.Close()
 	
 	file.Seek(0, 0)
@@ -82,7 +74,7 @@ func processUrl(urlStr string) string {
 	}
 
 	// If the input URL is a relative path starting with "/", resolve it against the baseURL
-	if strings.HasPrefix(urlStr, "/") {
+	if strings.HasPrefix(urlStr, "/") || strings.HasPrefix(urlStr, "./") {
 		// Join base path and urlStr
 		return fmt.Sprintf("%s://%s%s", baseURL.Scheme, baseURL.Host, path.Join(baseURL.Path, urlStr))
 	}
@@ -124,7 +116,8 @@ func patchLinks(file *os.File) {
 		link, _ := s.Attr("href")
 		if linkAllowed(link) {
 			wg.Add(1)
-			go func() {
+			sCopy := s.Clone() // clone it
+			go func(s *goquery.Selection) {
 				defer wg.Done()
 				linkFile := DownloaderWrapper(processUrl(link))
 				if linkFile == nil {
@@ -141,7 +134,7 @@ func patchLinks(file *os.File) {
 					}
 					s.SetAttr("href", relativePath)
 				}
-			}()
+			}(sCopy)
 		}
 	})
 
@@ -206,7 +199,8 @@ func patchLinks(file *os.File) {
 
 		if linkAllowed(link) {
 			wg.Add(1)
-			go func() {
+			sCopy := s.Clone() // clone it
+			go func(s *goquery.Selection) {
 				defer wg.Done()
 				linkFile := DownloaderWrapper(processUrl(link))
 				if linkFile == nil {
@@ -224,43 +218,50 @@ func patchLinks(file *os.File) {
 					}
 					s.SetAttr("src", relativePath)
 				}
-			}()
+			}(sCopy)
 		}
 	})
 
 	// internal CSS links
 	doc.Find("style").Each(func(i int, s *goquery.Selection) {
-		urlMatcher := regexp.MustCompile(`url\(['"]?(.*?)['"]?\)`)
-
 		css := s.Text()
-
-		css = urlMatcher.ReplaceAllStringFunc(css, func(match string) string {
-			url := urlMatcher.FindStringSubmatch(match)[1]
-
-			if !linkAllowed(url) {
-				return match
+		urlMatcher := regexp.MustCompile(`url\(['"]?(.*?)['"]?\)`)
+		matches := urlMatcher.FindAllStringSubmatch(css, -1)
+	
+		if matches == nil {
+			return
+		}
+	
+		for _, match := range matches {
+			raw := match[0] // full match like url('/img.png')
+			urlStr := match[1] // just '/img.png'
+	
+			if !linkAllowed(urlStr) {
+				continue
 			}
-
-			linkFile := DownloaderWrapper(processUrl(url))
-			if linkFile == nil {
-				return match
-			}
-			defer linkFile.Close()
-
-			if convertLinks {
-
-				relativePath, err := filepath.Rel(filepath.Dir(file.Name()), linkFile.Name())
-
-				if err != nil {
-					return match
+	
+			wg.Add(1)
+			go func(raw, urlStr string) {
+				defer wg.Done()
+	
+				linkFile := DownloaderWrapper(processUrl(urlStr))
+				if linkFile == nil {
+					return
 				}
-
-				return strings.Replace(match, url, relativePath, 1)
-			}
-			return url
-		})
-		s.SetHtml(css)
+				defer linkFile.Close()
+	
+				if convertLinks {
+					relativePath, err := filepath.Rel(filepath.Dir(file.Name()), linkFile.Name())
+					if err != nil {
+						return
+					}
+					newCSS := strings.Replace(css, raw, fmt.Sprintf("url('%s')", relativePath), -1)
+					s.SetHtml(newCSS)
+				}
+			}(raw, urlStr)
+		}
 	})
+	
 
 	wg.Wait()
 
@@ -273,5 +274,4 @@ func patchLinks(file *os.File) {
 	file.Seek(0, 0)
 	file.Truncate(0)
 	file.WriteString(docHtml)
-	file.Close()
 }

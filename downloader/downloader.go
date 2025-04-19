@@ -18,7 +18,7 @@ import (
 var (
 	fileName      string
 	outputPath    string
-	downloadPath   string
+	downloadPath  string
 	mirrorMode    bool
 	multiFileMode bool
 )
@@ -42,8 +42,8 @@ var (
 //	}
 func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 	startTime := time.Now()
+	fmt.Println("fileURL", fileURL)
 	fmt.Printf("start at %s\n", startTime.Format("2006-01-02 15:04:05"))
-
 	// Sending request
 	resp, err := http.Get(fileURL)
 	if err != nil {
@@ -52,7 +52,7 @@ func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %s", resp.Status)
+		return nil, nil
 	}
 	fmt.Println("sending request, awaiting response... status 200 OK")
 
@@ -61,49 +61,46 @@ func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 	sizeMB := float64(size) / (1024 * 1024)
 	fmt.Printf("content size: %d [~%.2fMB]\n", size, sizeMB)
 	if mirrorMode {
-			parsedURL, err := url.Parse(fileURL)
-			if err != nil {
-				fmt.Printf("Error parsing URL: %v",  err)
-				return nil, nil
-			}
-			if parsedURL.Path == "" {
-				downloadPath = parsedURL.Host + string(os.PathSeparator)
-			} else {
-				downloadPath, _ = path.Split(parsedURL.Host + parsedURL.Path)
-			}
-			// Ensure the directory exists
-			if err := os.MkdirAll(downloadPath, os.ModePerm); err != nil {
-				fmt.Printf("Failed to create directory: %s, error: %v\n", downloadPath, err)
-				return nil,nil
-			}
+		parsedURL, err := url.Parse(fileURL)
+		if err != nil {
+			fmt.Printf("Error parsing URL: %v", err)
+			return nil, err
+		}
+		if parsedURL.Path == "" {
+			downloadPath = parsedURL.Host + string(os.PathSeparator)
+		} else {
+			downloadPath, _ = path.Split(parsedURL.Host + parsedURL.Path)
+		}
+		// Ensure the directory exists
+		if err := os.MkdirAll(downloadPath, os.ModePerm); err != nil {
+			fmt.Printf("Failed to create directory: %s, error: %v\n", downloadPath, err)
+			return nil, nil
+		}
 	}
 	fileName, err = utils.MakeAName(fileURL)
 	if err != nil {
 		fmt.Println("Error making a name for the download:", err)
 		return nil, err
 	}
-	println("file name:", fileName)
-
 	// Create the file
 	if mirrorMode {
 		fileName = filepath.Join(downloadPath, fileName)
-		} 
-	file, err := os.Create(fileName)
-		if err != nil {
-			return nil, fmt.Errorf("error creating file: %v", err)
-		}
-	filePath := filepath.Dir(file.Name())
-	if mirrorMode && fileName != "index.html" {
-		filePath = filepath.Join(downloadPath, fileName)
 	}
+	file, err := os.Create(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("error creating file: %v", err)
+	}
+	filePath := filepath.Dir(file.Name())
 	absFilePath, err := filepath.Abs(filePath)
 	if err != nil {
 		log.Fatalf("Error getting path: %v", err)
 	}
+	// defer file.Close()
 
 	// join the path of the folder to save the file into with the file name
 	joinedPath := filepath.Join(absFilePath)
 	fmt.Printf("saving file to: %s\n", joinedPath)
+	fmt.Println("file name:", fileName)
 
 	// Create progress bar
 	bar := progressbar.DefaultBytes(

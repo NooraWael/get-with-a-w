@@ -15,7 +15,7 @@ import (
 
 func main() {
 	//get the flags entered in
-	flags, flagProvided, startweb,url2 := config.ParseFlags()
+	flags, flagProvided, startweb, url2 := config.ParseFlags()
 	if startweb {
 		web.StartWebServer()
 	} else {
@@ -25,6 +25,7 @@ func main() {
 				mirror(flags)
 				return
 			} else {
+				// url2 = utils.EnsureScheme(url2)
 				config.HandleDownloadWithFlags(url2, flags)
 			}
 		} else {
