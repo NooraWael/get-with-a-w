@@ -17,7 +17,6 @@ import (
 
 var (
 	fileName      string
-	outputPath    string
 	downloadPath  string
 	mirrorMode    bool
 	multiFileMode bool
@@ -42,7 +41,6 @@ var (
 //	}
 func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 	startTime := time.Now()
-	fmt.Println("fileURL", fileURL)
 	fmt.Printf("start at %s\n", startTime.Format("2006-01-02 15:04:05"))
 	// Sending request
 	resp, err := http.Get(fileURL)
@@ -95,7 +93,6 @@ func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 	if err != nil {
 		log.Fatalf("Error getting path: %v", err)
 	}
-	// defer file.Close()
 
 	// join the path of the folder to save the file into with the file name
 	joinedPath := filepath.Join(absFilePath)
@@ -124,24 +121,4 @@ func DownloadFile(fileURL string, mirrorMode bool) (*os.File, error) {
 
 func SetFileName(name string) {
 	fileName = name
-}
-
-func GetFileName() string {
-	return fileName
-}
-
-func GetOutputPath() string {
-	return outputPath
-}
-
-func SetOutputPath(path string) {
-	outputPath = path
-}
-
-func SetMirrorMode(mode bool) {
-	mirrorMode = mode
-}
-
-func SetMultiFileMode(mode bool) {
-	multiFileMode = mode
 }

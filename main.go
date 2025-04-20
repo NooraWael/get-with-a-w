@@ -15,7 +15,11 @@ import (
 
 func main() {
 	//get the flags entered in
-	flags, flagProvided, startweb, url2 := config.ParseFlags()
+	flags, flagProvided, startweb, url2, err := config.ParseFlags()
+	if err != nil {
+		fmt.Println("Error parsing flags:", err)
+		return
+	}
 	if startweb {
 		web.StartWebServer()
 	} else {
@@ -25,7 +29,6 @@ func main() {
 				mirror(flags)
 				return
 			} else {
-				// url2 = utils.EnsureScheme(url2)
 				config.HandleDownloadWithFlags(url2, flags)
 			}
 		} else {
@@ -36,7 +39,7 @@ func main() {
 				return
 			}
 			downloader.SetFileName(output)
-			downloader.SetOutputPath(output)
+
 			//make sure there is :// or something like that
 			url = utils.EnsureScheme(url)
 			_, err = downloader.DownloadFile(url, false)
@@ -49,26 +52,6 @@ func main() {
 
 // code when mirror flag is set
 func mirror(flags map[string]string) {
-	if flags["outputFileName"] != "" {
-		fmt.Println("Cannot specify both -O and -mirror")
-		os.Exit(1)
-	}
-
-	if flags["inputFile"]!= "" {
-		fmt.Println("Cannot specify both -i and -mirror")
-		os.Exit(1)
-	}
-
-	if flags["X"] != "" && flags["exclude"] != "" {
-		fmt.Println("Cannot specify both -X and -exclude")
-		os.Exit(1)
-	}
-
-	if flags["R"] != "" && flags["reject"] != "" {
-		fmt.Println("Cannot specify both -R and -reject")
-		os.Exit(1)
-	}
-
 	if flags["reject"] != "" {
 		flags["R"] = flags["reject"]
 	}
@@ -88,12 +71,14 @@ func mirror(flags map[string]string) {
 		mirrorer.SetExcludeDirsList(excludeDirs)
 	}
 
+	if flags["convertLinks"] != "" {
+		mirrorer.SetConvertLinks(true)
+	}
+
 	if flag.NArg() == 0 {
 		fmt.Println("Missing URL")
 		os.Exit(1)
 	}
-
-	downloader.SetMirrorMode(true)
 
 	url, _ := url.Parse(flag.Arg(0))
 	println("Mirroring URL:", url.String())

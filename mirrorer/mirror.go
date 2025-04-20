@@ -116,8 +116,7 @@ func patchLinks(file *os.File) {
 		link, _ := s.Attr("href")
 		if linkAllowed(link) {
 			wg.Add(1)
-			sCopy := s.Clone() // clone it
-			go func(s *goquery.Selection) {
+			go func() {
 				defer wg.Done()
 				linkFile := DownloaderWrapper(processUrl(link))
 				if linkFile == nil {
@@ -134,7 +133,7 @@ func patchLinks(file *os.File) {
 					}
 					s.SetAttr("href", relativePath)
 				}
-			}(sCopy)
+			}()
 		}
 	})
 
@@ -199,8 +198,7 @@ func patchLinks(file *os.File) {
 
 		if linkAllowed(link) {
 			wg.Add(1)
-			sCopy := s.Clone() // clone it
-			go func(s *goquery.Selection) {
+			go func() {
 				defer wg.Done()
 				linkFile := DownloaderWrapper(processUrl(link))
 				if linkFile == nil {
@@ -218,52 +216,46 @@ func patchLinks(file *os.File) {
 					}
 					s.SetAttr("src", relativePath)
 				}
-			}(sCopy)
+			}()
 		}
 	})
 
 	// internal CSS links
 	doc.Find("style").Each(func(i int, s *goquery.Selection) {
-		css := s.Text()
 		urlMatcher := regexp.MustCompile(`url\(['"]?(.*?)['"]?\)`)
-		matches := urlMatcher.FindAllStringSubmatch(css, -1)
-	
-		if matches == nil {
-			return
-		}
-	
-		for _, match := range matches {
-			raw := match[0] // full match like url('/img.png')
-			urlStr := match[1] // just '/img.png'
-	
-			if !linkAllowed(urlStr) {
-				continue
+
+		css := s.Text()
+
+		css = urlMatcher.ReplaceAllStringFunc(css, func(match string) string {
+			url := urlMatcher.FindStringSubmatch(match)[1]
+
+			if !linkAllowed(url) {
+				return match
 			}
-	
-			wg.Add(1)
-			go func(raw, urlStr string) {
-				defer wg.Done()
-	
-				linkFile := DownloaderWrapper(processUrl(urlStr))
-				if linkFile == nil {
-					return
+
+			linkFile := DownloaderWrapper(processUrl(url))
+			if linkFile == nil {
+				return match
+			}
+			defer linkFile.Close()
+
+			if convertLinks {
+
+				relativePath, err := filepath.Rel(filepath.Dir(file.Name()), linkFile.Name())
+
+				if err != nil {
+					return match
 				}
-				defer linkFile.Close()
-	
-				if convertLinks {
-					relativePath, err := filepath.Rel(filepath.Dir(file.Name()), linkFile.Name())
-					if err != nil {
-						return
-					}
-					newCSS := strings.Replace(css, raw, fmt.Sprintf("url('%s')", relativePath), -1)
-					s.SetHtml(newCSS)
-				}
-			}(raw, urlStr)
-		}
+
+				return strings.Replace(match, url, relativePath, 1)
+			}
+			return url
+		})
+		s.SetHtml(css)
 	})
-	
 
 	wg.Wait()
+
 
 	// save the modified HTML
 	docHtml, err := doc.Html()
@@ -274,4 +266,5 @@ func patchLinks(file *os.File) {
 	file.Seek(0, 0)
 	file.Truncate(0)
 	file.WriteString(docHtml)
+
 }

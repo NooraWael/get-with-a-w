@@ -12,7 +12,6 @@ import (
 // i flag mostly
 // Handles the case when -i flag is set
 func FileList(inputFile string) {
-	SetMultiFileMode(true)
 	// convert interface to string
 	file, err := os.Open(inputFile)
 	if err != nil {

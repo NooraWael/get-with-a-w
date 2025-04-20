@@ -34,7 +34,6 @@ import (
 // @parameter flags - a map of the entire flags and their values that were passed when running the program
 func HandleDownloadWithFlags(url string, flags map[string]string) {
 	var err error
-	fmt.Println("fileURL", url)
 	// ----------- -B flag -------------
 	logToFile := false               // check the existance of the -B flag
 	saveInDifferentLocation := false // check the existance of the -P flag
@@ -70,7 +69,6 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 		case "i":
 			inputFile := flags["i"]
 			downloader.SetFileName(inputFile)
-			downloader.SetMultiFileMode(true)
 			downloader.FileList(inputFile)
 			return
 		case "rate-limit":
@@ -79,8 +77,6 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 				log.Fatalf("Error adjusting rate limit: %v", rateLimitErr)
 				os.Exit(1)
 			}
-		case "mirror":
-			// mirrorer
 		}
 	}
 	// rateLimit is in bytes per second
@@ -163,22 +159,21 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	logger.Printf("saving file to: ./%s", joinedPath)
 
 	// Create a progress bar that writes to discard since we don't need to display it
-	if !logToFile {
-	bar := progressbar.DefaultBytes(size, "downloading")
-	
-	multiWriter := io.MultiWriter(file, bar)
-	reader := resp.Body
-	
-	if limiter != nil {
-		reader = &rateLimitedReader{
-			ReadCloser: resp.Body,
-			limiter:    limiter,
+	var multiWriter io.Writer
+	if logToFile {
+		multiWriter = io.MultiWriter(file)
+		} else {
+			bar := progressbar.DefaultBytes(size, "downloading")
+			multiWriter = io.MultiWriter(file, bar)
 		}
-	}
+		reader := resp.Body
+		if limiter != nil {
+			reader = &rateLimitedReader{
+				ReadCloser: resp.Body,
+				limiter:    limiter,
+			}
+		}
 	_, err = io.Copy(multiWriter, reader)
-	println(joinedPath)
-}
-	
 	if err != nil {
 		logger.Fatalf("Error writing to file: %v", err)
 	}
@@ -186,7 +181,7 @@ func HandleDownloadWithFlags(url string, flags map[string]string) {
 	logger.Printf("Downloaded [%s]\nfinished at %s", url, finishTime.Format("2006-01-02 15:04:05"))
 }
 
-func ParseFlags() (map[string]string, bool, bool, string) {
+func ParseFlags() (map[string]string, bool, bool, string, error) {
 	// Define all possible flags
 	outputFileName := flag.String("O", "", "Specify the output file name (optional)")
 	downloadPath := flag.String("P", "", "Specify the path to save the file")
@@ -248,7 +243,7 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 	}
 
 	if *convertLinks != false {
-		flagsUsed["convert-links"] = "convertLinks"
+		flagsUsed["convertLinks"] = "convertLinks"
 		anyFlagUsed = true
 	}
 
@@ -272,7 +267,55 @@ func ParseFlags() (map[string]string, bool, bool, string) {
 		anyFlagUsed = true
 	}
 
-	return flagsUsed, anyFlagUsed, *web, urlArg
+	if flagsUsed["i"] != "" && flagsUsed["O"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -i and -O")
+	}
+
+	if flagsUsed["i"] != "" && flagsUsed["P"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -i and -P")
+	}
+
+	if flagsUsed["i"] != "" && flagsUsed["B"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -i and -B")
+	}
+
+	if flagsUsed["i"] != "" && flagsUsed["rate-limit"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -i and -rate-limit")
+	}
+
+	if (flagsUsed["R"] != "" || flagsUsed["reject"] != "") && (flagsUsed["X"] != "" || flagsUsed["exclude"] != "") && flagsUsed["mirror"] == "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -reject or -exclude without mirror")
+	}
+
+	if flagsUsed["R"] != "" && flagsUsed["reject"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -R and -reject")
+	}
+
+	if flagsUsed["X"] != "" && flagsUsed["exclude"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -X and -exclude")
+	}
+
+	if flagsUsed["mirror"] != "" && flagsUsed["O"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -O and -mirror")
+	}
+
+	if flagsUsed["mirror"] != "" && flagsUsed["i"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -i and -mirror")
+	}
+
+	if flagsUsed["mirror"] != "" && flagsUsed["P"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -P and -mirror")
+	}
+
+	if flagsUsed["mirror"] != "" && flagsUsed["B"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -B and -mirror")
+	}
+
+	if flagsUsed["mirror"] != "" && flagsUsed["rate-limit"] != "" {
+		return nil, false, false, "", fmt.Errorf("cannot specify both -rate-limit and -mirror")
+	}
+
+	return flagsUsed, anyFlagUsed, *web, urlArg, nil
 }
 
 func adjust_rate_limit(rateLimit string) (int, error) {
