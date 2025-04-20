@@ -1,15 +1,13 @@
 package downloader
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"sync"
-	"bufio"
 	"strings"
-	// "wget/logger"
+	"sync"
 )
-// Manages multiple and background downloads
-// i flag mostly
+
 // Handles the case when -i flag is set
 func FileList(inputFile string) {
 	// convert interface to string

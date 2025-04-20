@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/url"
-	"os"
-	"strings"
 	"wget/config"
 	"wget/downloader"
 	"wget/mirrorer"
@@ -26,10 +23,10 @@ func main() {
 		url := flag.Arg(0)
 		if flagProvided {
 			if flags["mirror"] != "" {
-				mirror(flags)
+				mirrorer.ParseMirrorFlag(flags)
 				return
 			} else {
-				config.HandleDownloadWithFlags(url2, flags)
+				downloader.HandleDownloadWithFlags(url2, flags)
 			}
 		} else {
 			//get a name for the download and call the download function
@@ -48,39 +45,4 @@ func main() {
 			}
 		}
 	}
-}
-
-// code when mirror flag is set
-func mirror(flags map[string]string) {
-	if flags["reject"] != "" {
-		flags["R"] = flags["reject"]
-	}
-
-	if flags["exclude"] != "" {
-		flags["X"] = flags["exclude"]
-	}
-
-
-	if flags["R"] != "" {
-		rejectList := strings.Split(flags["R"], ",")
-		mirrorer.SetExcludeExtsList(rejectList)
-	}
-
-	if flags["X"] != "" {
-		excludeDirs := strings.Split(flags["X"], ",")
-		mirrorer.SetExcludeDirsList(excludeDirs)
-	}
-
-	if flags["convertLinks"] != "" {
-		mirrorer.SetConvertLinks(true)
-	}
-
-	if flag.NArg() == 0 {
-		fmt.Println("Missing URL")
-		os.Exit(1)
-	}
-
-	url, _ := url.Parse(flag.Arg(0))
-	println("Mirroring URL:", url.String())
-	mirrorer.Mirror(url)
 }
