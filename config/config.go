@@ -284,7 +284,7 @@ func ParseFlags() (map[string]string, bool, bool, string, error) {
 	}
 
 	if (flagsUsed["R"] != "" || flagsUsed["reject"] != "") && (flagsUsed["X"] != "" || flagsUsed["exclude"] != "") && flagsUsed["mirror"] == "" {
-		return nil, false, false, "", fmt.Errorf("cannot specify both -reject or -exclude without mirror")
+		return nil, false, false, "", fmt.Errorf("cannot specify -reject or -exclude without mirror")
 	}
 
 	if flagsUsed["R"] != "" && flagsUsed["reject"] != "" {
@@ -341,7 +341,7 @@ func adjust_rate_limit(rateLimit string) (int, error) {
 		return 0, err
 	}
 
-	return rate * multiplier, nil
+	return rate * multiplier * (9 / 10), nil
 }
 
 type rateLimitedReader struct {
