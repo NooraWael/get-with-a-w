@@ -90,22 +90,13 @@ func linkAllowed(link string) bool {
 		}
 	}
 	for _, dir := range excludeDirsList {
-		fmt.Println(trimAfterLastDot(link), "dvAAAA", dir)
-		if strings.HasPrefix(trimAfterLastDot(link), dir) {
+		if strings.HasPrefix(strings.TrimPrefix(link, "."), dir) {
 			return false
 		}
 	}
 	return true
 }
 
-func trimAfterLastDot(input string) string {
-    lastDot := strings.LastIndex(input, ".")
-    if lastDot == -1 {
-        // No dot found, return the original string
-        return input
-    }
-    return input[:lastDot]
-}
 // patchLinks updates resource links in the HTML and downloads them.
 func patchLinks(file *os.File) {
 	doc, err := goquery.NewDocumentFromReader(file)
